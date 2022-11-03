@@ -180,9 +180,9 @@ values ("World cup", "Italy", 2022, 1),
 ("European cup", null, 2022, 0);
 
 insert into national_team (country, did_win_national_cup, last_won_national_cup, players_total_value)
-values ("Italy", 1, "2022-06-30", 1455500),
-("Germany", 1, "2018-05-25", 3455500),
-("Hungary", 0, null, 545000);
+values ("Italy", 1, "2022-06-30", 34000000),
+("Germany", 1, "2018-05-25", 95000000),
+("Hungary", 0, null, 115000000);
 
 insert into national_team_has_national_cup (national_team_id, national_cup_id) 
 values (1, 2),
@@ -228,3 +228,52 @@ select count(player.name) as "Number of players in Dortmund"
 from player join club
 on player.club_id = club.id
 where club.name = "Dortmund";
+
+/*
+Transaction in sql is a bunch of CRUD operations that related to each others. If some of them (which are modify ssomething in the database) fails, then the whole transaction has to fail.
+The transaction must be consistent. For example if a value of player who is in a national team is updated, then the national team players_total_value have to be updated too.
+The transaction should be isolated so there will not be entanglement.
+*/
+
+start transaction;
+select player.name, player.market_value, national_team.players_total_value
+from player join national_team
+on player.national_team_id = national_team.id
+where national_team.id = 1;
+
+savepoint beforeUpdatePlayer;
+
+update player
+set market_value = 44000000
+where id = 1;
+
+select name, market_value
+from player
+where id = 1;
+
+savepoint beforeUpdateNationalTeam;
+
+update national_team
+set players_total_value = 
+	(select sum(market_value)
+	from player
+    where national_team_id = 1)
+where id = 1;
+
+select country, players_total_value
+from player
+where id = 1;
+
+select player.name, player.market_value, national_team.players_total_value
+from player join national_team
+on player.national_team_id = national_team.id
+where national_team.id = 1;
+
+commit;
+
+rollback to beforeUpdateNationalTeam;
+commit;
+
+rollback to beforeUpdatePlayer;
+commit;
+
