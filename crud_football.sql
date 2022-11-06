@@ -277,3 +277,9 @@ commit;
 rollback to beforeUpdatePlayer;
 commit;
 
+select player.name as "Player name", league.name as "League name"
+from league join club
+on league.id = club.league_id join player
+on club.id = player.club_id;
+
+
